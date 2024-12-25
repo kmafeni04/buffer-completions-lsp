@@ -1,3 +1,13 @@
+do
+  local current_file_path = debug.getinfo(1, "S").source:sub(2)
+  local current_dir = current_file_path:match("(.*/)")
+
+  -- Add the current directory to the Lua package path
+  if current_dir then
+    package.path = package.path .. ";" .. current_dir .. "?.lua"
+  end
+end
+
 local rpc = require("utils.rpc")
 local logger = require("utils.logger")
 local server = require("utils.server")
