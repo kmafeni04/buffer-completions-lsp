@@ -136,8 +136,8 @@ while true do
       ---@return CompItem[]
       local function get_prefixed_completions(items, prefix)
         table.sort(items, function(a, b)
-          local a_has_prefix = a.label:sub(1, #prefix) == prefix
-          local b_has_prefix = b.label:sub(1, #prefix) == prefix
+          local a_has_prefix = a.label:sub(1, #prefix):lower() == prefix:lower()
+          local b_has_prefix = b.label:sub(1, #prefix):lower() == prefix:lower()
           if a_has_prefix and b_has_prefix then
             return a.label < b.label
           end
@@ -151,7 +151,7 @@ while true do
           if i > 10 then
             break
           end
-          if item.label:sub(1, #prefix) == prefix then
+          if item.label:sub(1, #prefix):lower() == prefix:lower() then
             table.insert(prefixed_items, item)
           end
         end
