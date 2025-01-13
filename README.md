@@ -1,6 +1,6 @@
-# text-only-completions-lsp
+# buffer-completions-lsp
 
-An LSP server that provides on text completions from files in your editor's buffer
+An LSP server that provides only text completions from files in your editor's buffer
 
 ## Dependencies
 - lua
