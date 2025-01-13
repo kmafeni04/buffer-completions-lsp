@@ -5,6 +5,7 @@ do
   -- Add the current directory to the Lua package path
   if current_dir then
     package.path = package.path .. ";" .. current_dir .. "?.lua"
+    package.path = package.path .. ";" .. current_dir .. "?/init.lua"
   end
 end
 
