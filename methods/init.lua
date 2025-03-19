@@ -4,10 +4,8 @@ local methods = {}
 
 ---@param request_params table
 ---@param current_file_content string
----@param current_uri string
----@param documents table<string, string>
-function methods.did_change(request_params, current_file_content, current_uri, documents)
-  return did_change(request_params, current_file_content, current_uri, documents)
+function methods.did_change(request_params, current_file_content)
+  return did_change(request_params, current_file_content)
 end
 
 ---@param request_params table

@@ -52,7 +52,7 @@ while true do
       current_file_content = request.params.textDocument.text
       documents[current_uri] = current_file_content
     elseif request.method == "textDocument/didChange" then
-      current_file_content = methods.did_change(request.params, current_file_content, current_uri, documents)
+      current_file_content = methods.did_change(request.params, current_file_content)
       documents[current_uri] = current_file_content
     elseif request.method == "textDocument/completion" then
       local items = methods.completion(request.params, current_file_content, documents)

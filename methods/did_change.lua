@@ -2,9 +2,7 @@ local logger = require("utils.logger")
 
 ---@param request_params table
 ---@param current_file_content string
----@param current_uri string
----@param documents table<string, string>
-return function(request_params, current_file_content, current_uri, documents)
+return function(request_params, current_file_content)
   ---@type string[]
   local lines = {}
   for line in string.gmatch(current_file_content .. "\n", "([^\n]-)\n") do
@@ -34,16 +32,17 @@ return function(request_params, current_file_content, current_uri, documents)
       for i = start_line, end_line do
         local current_line = i + offset
         if ci <= #change_lines then
-          if change_lines[ci] then
-            if current_line == start_line then
-              lines[current_line] = table.concat({ lines[current_line]:sub(1, start_char - 1), change_lines[ci] })
-            else
-              table.insert(lines, current_line, change_lines[ci])
-              offset = offset + 1
-            end
+          if current_line == start_line and lines[current_line] then
+            lines[current_line] = table.concat({ lines[current_line]:sub(1, start_char - 1), change_lines[ci] })
+          elseif lines[current_line] then
+            table.insert(lines, current_line, change_lines[ci])
+            offset = offset + 1
+          else
+            lines[current_line] = change_lines[ci]
+            offset = offset + 1
           end
-        elseif lines[current_line - 1] then
-          table.remove(lines, current_line - 1)
+        elseif lines[current_line] then
+          table.remove(lines, current_line)
           offset = offset - 1
         elseif ci == #lines then
           table.remove(lines, ci)
