@@ -27,6 +27,14 @@ return function(request_params, current_file_content)
       return
     end
 
+    if s_line > #lines + 1 then
+      return
+    end
+
+    while #lines < s_line do
+      table.insert(lines, "")
+    end
+
     local new_lines = split_lines(change.text)
     local head = lines[s_line] and lines[s_line]:sub(1, s_char - 1) or ""
     local tail = lines[e_line] and lines[e_line]:sub(e_char + 1) or ""
@@ -42,7 +50,7 @@ return function(request_params, current_file_content)
       table.insert(replacement, new_lines[#new_lines] .. tail)
     end
 
-    for i = s_line, e_line do
+    for _ = s_line, math.min(e_line, #lines) do
       table.remove(lines, s_line)
     end
 
@@ -60,7 +68,7 @@ return function(request_params, current_file_content)
   end
 
   -- Rejoin the lines into final content
-  current_file_content = table.concat(lines, "\n")
+  current_file_content = next(lines) and table.concat(lines, "\n") or current_file_content
   logger.log(current_file_content)
   return current_file_content
 end

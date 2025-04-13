@@ -1,233 +1,53 @@
-local did_change = require("methods.did_change")
+local lfs = require("lfs")
+local ansicolors = require("libs.ansicolor")
 
-do
-  local content = "local x = 10"
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 0, character = #content - 2 },
-          ["end"] = { line = 0, character = #content },
-        },
-        text = "12",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "local x = 12"
-  assert(new_content == expected)
+local parent_dir, parent_dir_err = lfs.currentdir()
+if not parent_dir then
+  error(("Failed to get parent_dir, %s"):format(parent_dir_err))
 end
 
-do
-  local line1 = "local x = 10"
-  local line2 = "local y = 12"
-  local content = table.concat({ line1, line2 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 0, character = #line1 - 2 },
-          ["end"] = { line = 0, character = #line1 },
-        },
-        text = "12",
-      },
-      [2] = {
-        range = {
-          start = { line = 1, character = #line2 - 2 },
-          ["end"] = { line = 1, character = #line2 },
-        },
-        text = "12",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "local x = 12\nlocal y = 12"
-  assert(new_content == expected)
+local changed_path, changed_path_err = lfs.chdir("tests")
+
+if not changed_path then
+  error(("Failed to changed path to tests directory, %s"):format(changed_path_err))
 end
 
-do
-  local line1 = "local x = 10"
-  local line2 = "local y = 12"
-  local line3 = "local z = 14"
-  local content = table.concat({ line1, line2, line3 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 0, character = #line1 - 5 },
-          ["end"] = { line = 1, character = 0 },
-        },
-        text = "",
-      },
-      [2] = {
-        range = {
-          start = { line = 0, character = #line1 - 5 },
-          ["end"] = { line = 0, character = #line1 - 5 + #line2 },
-        },
-        text = "",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "local x\nlocal z = 14"
-  assert(new_content == expected)
+local current_dir, current_dir_err = lfs.currentdir()
+if not current_dir then
+  error(("Failed to get current_dir, %s"):format(current_dir_err))
 end
 
-do
-  local line1 = "local x = 10"
-  local line2 = "local y = 12"
-  local line3 = "local z = 14"
-  local content = table.concat({ line1, line2, line3 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 0, character = #line1 - 5 },
-          ["end"] = { line = 2, character = #line3 },
-        },
-        text = "",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "local x"
-  assert(new_content == expected)
+---@param dir string
+---@param failed_tests table
+---@return table failed_tests
+local function run_tests(dir, failed_tests)
+  for file in lfs.dir(dir) do
+    if file ~= "." and file ~= ".." then
+      local f = dir .. "/" .. file
+      local attr = lfs.attributes(f)
+      if attr.mode == "directory" then
+        lfs.chdir(f)
+        run_tests(f, failed_tests)
+        lfs.chdir("..")
+      else
+        local success = os.execute(("LESTER_SHOW_TRACEBACK='false' nelua -L %s --script %s"):format(parent_dir, file))
+        if not success then
+          table.insert(failed_tests, f:sub(#parent_dir + 1))
+        end
+      end
+    end
+  end
+  return failed_tests
 end
 
-do
-  local line1 = "local x = 10"
-  local line2 = "local y = 12"
-  local line3 = "local z = 14"
-  local content = table.concat({ line1, line2, line3 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 0, character = 0 },
-          ["end"] = { line = 2, character = #line3 },
-        },
-        text = "",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = ""
-  assert(new_content == expected)
+local failed_tests = run_tests(current_dir, {})
+
+print()
+if next(failed_tests) then
+  for _, failed_test in ipairs(failed_tests) do
+    io.stderr:write(("%s Test `%s` failed\n"):format(ansicolors.new("[ERROR]"):Red():tostring(), failed_test))
+  end
+  os.exit(1)
 end
 
-do
-  local line1 = "local x = 10"
-  local line2 = "local y = 12"
-  local content = table.concat({ line1, line2 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 0, character = 0 },
-          ["end"] = { line = 0, character = 0 },
-        },
-        text = "-- inserted comment\n",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "-- inserted comment\nlocal x = 10\nlocal y = 12"
-  assert(new_content == expected)
-end
-
-do
-  local line1 = "local x = 10"
-  local line2 = "local y = 12"
-  local content = table.concat({ line1, line2 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 1, character = 10 },
-          ["end"] = { line = 1, character = 11 },
-        },
-        text = "99",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "local x = 10\nlocal y = 99"
-  assert(new_content == expected)
-end
-
-do
-  local line1 = "local x = 10"
-  local line2 = "local y = 12"
-  local line3 = "local z = 14"
-  local content = table.concat({ line1, line2, line3 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 1, character = 0 },
-          ["end"] = { line = 1, character = 0 },
-        },
-        text = "-- new line\n",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "local x = 10\n-- new line\nlocal y = 12\nlocal z = 14"
-  assert(new_content == expected)
-end
-
-do
-  local line1 = "print('one')"
-  local line2 = "print('two')"
-  local line3 = "print('three')"
-  local content = table.concat({ line1, line2, line3 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 0, character = 7 },
-          ["end"] = { line = 2, character = 11 },
-        },
-        text = "1')\nprint('2')\nprint('3",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "print('1')\nprint('2')\nprint('3')"
-  assert(new_content == expected)
-end
-
-do
-  local line1 = "print('one')"
-  local line2 = "print('two')"
-  local line3 = "print('three')"
-  local content = table.concat({ line1, line2, line3 }, "\n")
-  local request_params = {
-    contentChanges = {
-      [1] = {
-        range = {
-          start = { line = 0, character = 7 },
-          ["end"] = { line = 0, character = 9 },
-        },
-        text = "1",
-      },
-      [2] = {
-        range = {
-          start = { line = 1, character = 7 },
-          ["end"] = { line = 1, character = 9 },
-        },
-        text = "2",
-      },
-      [3] = {
-        range = {
-          start = { line = 2, character = 7 },
-          ["end"] = { line = 2, character = 11 },
-        },
-        text = "3",
-      },
-    },
-  }
-  local new_content = did_change(request_params, content)
-  local expected = "print('1')\nprint('2')\nprint('3')"
-  assert(new_content == expected)
-end
+print(("%s All tests passed"):format(ansicolors.new("[SUCCESS]"):Green():tostring()))
