@@ -1,5 +1,5 @@
 do
-  local current_file_path = debug.getinfo(1, "S").source:sub(2)
+  local current_file_path = debug.getinfo(1, "S").source:sub(2):gsub("\\", "/")
   local current_dir = current_file_path:match("(.*/)")
 
   -- Add the current directory to the Lua package path
@@ -14,6 +14,14 @@ local logger = require("utils.logger")
 local server = require("utils.server")
 
 local methods = require("methods")
+
+do
+  -- Windows CLRF Issue
+  local lfs = require("lfs")
+  lfs.setmode(io.stdin, "binary")
+  lfs.setmode(io.stdout, "binary")
+  lfs.setmode(io.stderr, "binary")
+end
 
 ---@type table<string, string>
 local documents = {}
