@@ -43,7 +43,7 @@ return function(request_params, current_file_content, documents)
     local prefixed_items = {}
 
     for i, item in ipairs(items) do
-      if i > 10 then
+      if i > 100 then
         break
       end
       local prefix_lower = prefix:lower()
